@@ -56,16 +56,16 @@ export class ErrorsWarningsComponent implements OnInit, OnChanges, OnDestroy {
         private _broadcastService: BroadcastService,
         private _globalStateService: GlobalStateService) {
         this.tokenSubscription = this._userService.getStartupInfo().subscribe(s => this.token = s.token);
-        this.hostEventSubscription = this._hostEventService.Events
-        .do(null, error => { console.log(error); })
-        .retry().subscribe((r: any) => {
-            ErrorsWarningsComponent.functionsDiagnostics[r.functionName] = r.diagnostics;
-            if (this.functionInfo && this.functionInfo.name === r.functionName) {
-                this.diagnostics = r.diagnostics;
-                this.monacoEditor.setDiagnostics(this.diagnostics);
-                this.clearBusyState();
-            }
-        });
+        this.hostEventSubscription = this._hostEventService.events
+            .do(null, error => { console.log(error); })
+            .retry().subscribe((r: any) => {
+                ErrorsWarningsComponent.functionsDiagnostics[r.functionName] = r.diagnostics;
+                if (this.functionInfo && this.functionInfo.name === r.functionName) {
+                    this.diagnostics = r.diagnostics;
+                    this.monacoEditor.setDiagnostics(this.diagnostics);
+                    this.clearBusyState();
+                }
+            });
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -116,17 +116,17 @@ export class ErrorsWarningsComponent implements OnInit, OnChanges, OnDestroy {
             delete this.hostEventSubscription;
         }
 
-        if(this.monacoSaveSubscription) {
+        if (this.monacoSaveSubscription) {
             this.monacoSaveSubscription.unsubscribe();
             delete this.monacoSaveSubscription;
         }
 
-        if(this.monacoContentChangedSubscription) {
+        if (this.monacoContentChangedSubscription) {
             this.monacoContentChangedSubscription.unsubscribe();
             delete this.monacoContentChangedSubscription;
         }
 
-        if(this.fileSelectionSubscription) {
+        if (this.fileSelectionSubscription) {
             this.fileSelectionSubscription.unsubscribe();
             delete this.fileSelectionSubscription;
         }
@@ -171,10 +171,16 @@ export class ErrorsWarningsComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     private changeFiles(fileName: string) {
-        let requestedFile = this.fileExplorer.files.find((item) => item.name === fileName);
-        if (requestedFile) {
-            this.fileExplorer.selectedFile = requestedFile;
-            this.fileExplorer.selectVfsObject(requestedFile);
+        if (!this.fileExplorer.files) {
+            this.fileExplorer.fileExplorerReady.subscribe(() => {
+                this.changeFiles(fileName);
+            });
+        } else {
+            const requestedFile = this.fileExplorer.files && this.fileExplorer.files.find((item) => item.name === fileName);
+            if (requestedFile) {
+                this.fileExplorer.selectedFile = requestedFile;
+                this.fileExplorer.selectVfsObject(requestedFile);
+            }
         }
     }
 

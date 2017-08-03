@@ -1,6 +1,6 @@
 ﻿import { EditModeHelper } from './../shared/Utilities/edit-mode.helper';
 import { ConfigService } from './../shared/services/config.service';
-import { Component, OnInit, EventEmitter, QueryList, OnChanges, Input, SimpleChange, ViewChild, ViewChildren, OnDestroy, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, EventEmitter, QueryList, OnChanges, Input, SimpleChange, ViewChild, ViewChildren, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription'; import 'rxjs/add/observable/zip';
@@ -115,7 +115,8 @@ export class FunctionDevComponent implements OnChanges, OnDestroy {
         private _translateService: TranslateService,
         private _aiService: AiService,
         private _el: ElementRef,
-        configService: ConfigService) {
+        configService: ConfigService,
+        private cd: ChangeDetectorRef) {
 
         this.functionInvokeUrl = this._translateService.instant(PortalResources.functionDev_loading);
         this.isStandalone = configService.isStandalone();
@@ -222,16 +223,16 @@ export class FunctionDevComponent implements OnChanges, OnDestroy {
 
             });
 
-        this.hostEventSubscription = this._hostEventService.Events
-        .do(null, error => { console.log(error); })
-        .retry()
-        .subscribe((r: any) => {
-            if (this.functionInfo.name === r.functionName && (r.diagnostics && r.diagnostics.length > 0)) {
-                if (this.bottomTab !== "errors") {
-                    this.clickBottomTab("errors");
+        this.hostEventSubscription = this._hostEventService.events
+            .do(null, error => { console.log(error); })
+            .retry()
+            .subscribe((r: any) => {
+                if (this.functionInfo.name === r.functionName && (r.diagnostics && r.diagnostics.length > 0)) {
+                    if (this.bottomTab !== "errors") {
+                        this.clickBottomTab("errors");
+                    }
                 }
-            }
-        });
+            });
 
         this.functionUpdate = _broadcastService.subscribe(BroadcastEvent.FunctionUpdated, (newFunctionInfo: FunctionInfo) => {
             this.functionInfo.config = newFunctionInfo.config;
@@ -266,7 +267,7 @@ export class FunctionDevComponent implements OnChanges, OnDestroy {
 
         if (this.expandLogs) {
             editorContainerHeight = 0;
-            //editorContainerWidth = 0; 
+            //editorContainerWidth = 0;
 
             bottomContainerHeight = functionContainerHeight - functionNameHeight;
 
@@ -335,6 +336,7 @@ export class FunctionDevComponent implements OnChanges, OnDestroy {
 
     clickRightTab(tab: string) {
         this.rightTab = (this.rightTab === tab) ? "" : tab;
+        this.cd.detectChanges();
         // double resize to fix pre heigth
         this.onResize();
         setTimeout(() => {
@@ -378,7 +380,7 @@ export class FunctionDevComponent implements OnChanges, OnDestroy {
             delete this.updatedTestContent;
             delete this.runResult;
             const selectedFunction = changes['selectedFunction'].currentValue;
-            if(selectedFunction){
+            if (selectedFunction) {
                 this.functionSelectStream.next(changes['selectedFunction'].currentValue);
             }
         }
@@ -467,7 +469,7 @@ export class FunctionDevComponent implements OnChanges, OnDestroy {
             return;
         }
 
-        if(this.errorsWarningsComponent){
+        if (this.errorsWarningsComponent) {
             this.errorsWarningsComponent.setBusyState();
         }
 
